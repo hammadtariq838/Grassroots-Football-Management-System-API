@@ -34,7 +34,7 @@ export const errorHandler = (error: unknown, _: Request, res: Response, __: Next
     const response: ErrorResponse = {
       success: false,
       message: 'An unexpected error occurred',
-      error: Object(error)
+      error: error
     };
     res.status(500).json(response);
   }
