@@ -12,8 +12,10 @@ declare module "express-serve-static-core" {
       id: string;
       name: string;
       username: string;
-      role: ROLE;
-      isVerified: boolean;
+      team?: {
+        name: string;
+        players: string[];
+      };
     };
   }
 }

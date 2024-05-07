@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { TeamModel } from "../models";
+import { TeamModel, UserModel } from "../models";
 import mongoose from "mongoose";
 import { CreateTeamResponse, DeleteTeamResponse, GetAllTeamsResponse, GetTeamResponse } from "../types";
 import { NAE } from "../error";
@@ -79,6 +79,29 @@ class TeamController {
         throw new NAE('User is not a coach');
       }
       const { name, players } = req.body;
+      // check name is non empty string
+      if (!name || typeof name !== 'string') {
+        throw new NAE('Name is required');
+      }
+      // check players is an array of string and each string is a valid object id and each player exists
+      if (!Array.isArray(players) || players.length === 0) {
+        throw new NAE('Players is required');
+      }
+      for (let i = 0; i < players.length; i++) {
+        if (typeof players[i] !== 'string') {
+          throw new NAE('Players is required');
+        }
+        if (!mongoose.Types.ObjectId.isValid(players[i])) {
+          throw new NAE('Players is required');
+        }
+        const player = await UserModel.findOne({ _id: new mongoose.Types.ObjectId(players[i]) });
+        if (!player) {
+          throw new NAE('Player not found');
+        }
+      }
+      
+
+
       const team = new TeamModel({
         name,
         coach: new mongoose.Types.ObjectId(user.id),

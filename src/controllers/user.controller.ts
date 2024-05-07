@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserModel } from '../models';
 import { BRE400, NAE } from '../error';
-import { GetAllPlayersResponse, UserGetResponse, UserSigninResponse, UserSignoutResponse } from '../types';
+import { User, UserGetAllResponse, UserGetByIdResponse, UserResponse, UserSigninResponse, UserSignoutResponse } from '../types';
 
 class UserController {
 
@@ -9,15 +9,16 @@ class UserController {
   // sign up user static public method
   static async signUp(req: Request, _: Response, next: NextFunction) {
     try {
-      const { username, password, role } = req.body;
+      const { username, password, name } = req.body;
       const userExists = await UserModel.findOne({ username });
       if (userExists) {
         throw new BRE400('User already exists');
       }
-      if (role !== 'admin' && role !== 'coach' && role !== 'player') {
-        throw new BRE400('Invalid role');
-      }
-      const newUser = new UserModel({ username, password, role, isVerified: false });
+      const newUser = new UserModel<User>({
+        name, 
+        username, 
+        password,
+      });
       await newUser.save();
       next();
     } catch (error) {
@@ -40,8 +41,7 @@ class UserController {
       req.session.user = {
         id: user._id.toString(),
         username: user.username,
-        role: user.role,
-        // // isVerified: user.isVerified
+        name: user.name,
       };
       const response: UserSigninResponse  = {
         success: true,
@@ -49,8 +49,11 @@ class UserController {
         user: {
           id: user._id.toString(),
           username: user.username,
-          role: user.role,
-          // // isVerified: user.isVerified
+          name: user.name,
+          team: user.team ? {
+            name: user.team.name,
+            players: user.team.players
+          } : undefined
         }
       }
       res.status(200).json(response);
@@ -78,41 +81,20 @@ class UserController {
     }
   }
 
-  static async getUser(req: Request, res: Response, next: NextFunction) {
+  static async getAllUser(_: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user;
-      if (!user) {
-        throw new NAE('No User Found');
-      }
-      const response: UserGetResponse = {
+      const users = await UserModel.find();
+      const response: UserGetAllResponse = {
         success: true,
         message: 'User found',
-        user: {
-          id: user.id,
+        users: users.map(user => ({
+          id: user._id.toString(),
           username: user.username,
-          role: user.role,
-          // // isVerified: user.isVerified
-        }
-      }
-      res.status(200).json(response);
-    } catch (error) {
-      next(error)
-    }
-  }
-
-
-
-  static async getAllPlayers(_: Request, res: Response, next: NextFunction) {
-    try {
-      const players = await UserModel.find({ role: 'player' });
-      const response: GetAllPlayersResponse = {
-        success: true,
-        message: 'Players found',
-        players: players.map(player => ({
-          id: player._id.toString(),
-          username: player.username,
-          role: player.role as 'player',
-          // // isVerified: player.isVerified
+          name: user.name,
+          team: user.team ? {
+            name: user.team.name,
+            players: user.team.players
+          } : undefined
         }))
       }
       res.status(200).json(response);
@@ -122,6 +104,80 @@ class UserController {
   }
 
 
+  // get user by id
+  static async getUserById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const user = await UserModel.findById(id);
+      if (!user) {
+        throw new NAE('User not found');
+      }
+      const response: UserGetByIdResponse = {
+        success: true,
+        message: 'User found',
+        user: {
+          id: user._id.toString(),
+          username: user.username,
+          name: user.name,
+          team: user.team ? {
+            name: user.team.name,
+            players: user.team.players
+          } : undefined
+        }
+      }
+      res.status(200).json(response);
+    } catch (error) {
+      next(error)
+    }
+  }
+
+
+  // create team
+  static async setTeam(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name, players } = req.body;
+      const user = req.session.user;
+      if (!user) {
+        throw new NAE('User not signed in');
+      }
+
+      // name is non empty string
+      if (!name || typeof name !== 'string') {
+        throw new BRE400('Invalid team name');
+      }
+      /// players is an array of strings
+      if (!players || !Array.isArray(players) || players.some(player => typeof player !== 'string')) {
+        throw new BRE400('Invalid players');
+      }
+
+
+      const updatedUser = await UserModel.findByIdAndUpdate(user.id, {
+        team: {
+          name,
+          players
+        }
+      }, { new: true });
+      if (!updatedUser) {
+        throw new NAE('User not found');
+      }
+      const response: UserResponse = {
+        success: true,
+        message: 'Team created successfully',
+        user: {
+          id: updatedUser._id.toString(),
+          username: updatedUser.username,
+          name: updatedUser.name,
+          team: updatedUser.team ? {
+            name: updatedUser.team.name,
+            players: updatedUser.team.players
+          } : undefined
+        }
+      }
+      res.status(200).json(response);
+    } catch (error) {
+      next(error)
+    }
+  }
 }
 
 

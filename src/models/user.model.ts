@@ -4,8 +4,14 @@ import { User } from "../types";
 const userSchema = new mongoose.Schema<User>({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, required: true },
-  isVerified: { type: Boolean, required: true },
+  name: { type: String, required: true },
+  team: {
+    type: {
+      name: { type: String },
+      players: [{ type: String }]
+    },
+    default: undefined
+  },
 }, { timestamps: true });
 
 const UserModel = mongoose.model<User>('User', userSchema);

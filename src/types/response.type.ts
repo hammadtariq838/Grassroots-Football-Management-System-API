@@ -11,14 +11,29 @@ export type UserResponse = BaseResponse & {
   user: {
     id: string,
     username: string,
-    role: "admin" | "coach" | "player",
-    // isVerified: boolean,
+    name: string,
+    team: {
+      name: string,
+      players: string[]
+    } | undefined
   }
 }
 export type UserSignupResponse = UserResponse;
 export type UserSigninResponse = UserResponse;
 export type UserSignoutResponse = BaseResponse;
-export type UserGetResponse = UserResponse;
+export type UserGetAllResponse = BaseResponse & {
+  users: {
+    id: string,
+    username: string,
+    name: string,
+    team: {
+      name: string,
+      players: string[]
+    } | undefined
+  }[]
+};
+export type UserGetByIdResponse = UserResponse;
+
 
 export type GetAllPlayersResponse = BaseResponse & {
   players: {
