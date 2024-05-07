@@ -12,7 +12,7 @@ export type UserResponse = BaseResponse & {
     id: string,
     username: string,
     role: "admin" | "coach" | "player",
-    isVerified: boolean,
+    // isVerified: boolean,
   }
 }
 export type UserSignupResponse = UserResponse;
@@ -25,7 +25,7 @@ export type GetAllPlayersResponse = BaseResponse & {
     id: string,
     username: string,
     role: "player",
-    isVerified: boolean,
+    // isVerified: boolean,
   }[]
 }
 

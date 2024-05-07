@@ -41,7 +41,7 @@ class UserController {
         id: user._id.toString(),
         username: user.username,
         role: user.role,
-        isVerified: user.isVerified
+        // // isVerified: user.isVerified
       };
       const response: UserSigninResponse  = {
         success: true,
@@ -50,7 +50,7 @@ class UserController {
           id: user._id.toString(),
           username: user.username,
           role: user.role,
-          isVerified: user.isVerified
+          // // isVerified: user.isVerified
         }
       }
       res.status(200).json(response);
@@ -91,7 +91,7 @@ class UserController {
           id: user.id,
           username: user.username,
           role: user.role,
-          isVerified: user.isVerified
+          // // isVerified: user.isVerified
         }
       }
       res.status(200).json(response);
@@ -112,7 +112,7 @@ class UserController {
           id: player._id.toString(),
           username: player.username,
           role: player.role as 'player',
-          isVerified: player.isVerified
+          // // isVerified: player.isVerified
         }))
       }
       res.status(200).json(response);
