@@ -80,8 +80,11 @@ export type GameResponse = BaseResponse & {
     id: string,
     name: string,
     dateTime: Date,
-    location: string,
-    teams: string[],
+    teams: {
+      coach: string,
+      players: string[],
+      name: string,
+    }[],
   }
 }
 export type GetGameResponse = GameResponse;
@@ -93,7 +96,10 @@ export type GetAllGamesResponse = BaseResponse & {
     id: string,
     name: string,
     dateTime: Date,
-    location: string,
-    teams: string[],
+    teams: {
+      coach: string,
+      players: string[],
+      name: string,
+    }[],
   }[]
 }

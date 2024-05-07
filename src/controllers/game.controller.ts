@@ -1,21 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
-import { GameModel } from '../models';
+import { GameModel, UserModel } from '../models';
 import { NAE } from '../error';
 import mongoose from 'mongoose';
-import { CreateGameResponse, DeleteGameResponse, GetAllGamesResponse, GetGameResponse, UpdateGameResponse } from '../types';
+import { CreateGameResponse, GetAllGamesResponse, GetGameResponse, User } from '../types';
 
 class GameController {
 
   // get all games
-  static async getAllGames(req: Request, res: Response, next: NextFunction) {
+  static async getAllGames(_: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user;
-      if (!user) {
-        throw new NAE('User not found');
-      }
-
-
       const games = await GameModel.find({})
+      .populate<{
+        teams: User[]
+      }>([
+        {
+          path: 'teams',
+          model: UserModel
+        }
+      ]);
       const response: GetAllGamesResponse = {
         success: true,
         message: 'Games found',
@@ -23,8 +25,13 @@ class GameController {
           id: game._id.toString(),
           name: game.name,
           dateTime: game.dateTime,
-          location: game.location,
-          teams: game.teams.map(team => team.toString())
+          teams: game.teams.map(user => {
+            return {
+              coach: user.username,
+              players: user.team ? user.team.players : [],
+              name: user.team ? user.team.name : ''
+            }
+          })
         }))
       }
       res.status(200).json(response);
@@ -42,7 +49,15 @@ class GameController {
         throw new NAE('User not found');
       }
       const gameId = req.params.id;
-      const game = await GameModel.findById(gameId);
+      const game = await GameModel.findById(gameId)
+      .populate<{
+        teams: User[]
+      }>([
+        {
+          path: 'teams',
+          model: UserModel
+        }
+      ]);
       if (!game) {
         throw new NAE('Game not found');
       }
@@ -53,8 +68,13 @@ class GameController {
           id: game._id.toString(),
           name: game.name,
           dateTime: game.dateTime,
-          location: game.location,
-          teams: game.teams.map(team => team.toString())
+          teams: game.teams.map(user => {
+            return {
+              coach: user.username,
+              players: user.team ? user.team.players : [],
+              name: user.team ? user.team.name : ''
+            }
+          })
         }
       }
       res.status(200).json(response);
@@ -71,16 +91,52 @@ class GameController {
       if (!user) {
         throw new NAE('User not found');
       }
-      if (user.role !== 'coach') {
-        throw new NAE('User is not a coach');
+      const { name, dateTime, teams } = req.body;
+      // name is non-empty string
+      if (typeof name !== 'string' || name.length === 0) {
+        throw new NAE('Name is required');
       }
-      const { name, dateTime, location, teams } = req.body;
-      const game = await GameModel.create({
+      // dateTime is a valid date
+      if (isNaN(new Date(dateTime).getTime())) {
+        throw new NAE('Invalid date');
+      }
+      // teams is an array of valid and existing user ids
+      if (!Array.isArray(teams) || teams.length === 0) {
+        throw new NAE('Teams are required');
+      }
+      for (const teamId of teams) {
+        const team = await UserModel.findById(teamId);
+        if (!team) {
+          throw new NAE('Team not found');
+        }
+        if (team.team === undefined) {
+          throw new NAE('Some teams do not have a team');
+        }
+      }
+
+      const game = new GameModel({
         name,
         dateTime,
-        location,
-        teams
+        teams: teams.map(teamId => new mongoose.Types.ObjectId(teamId))
       });
+      // push user to teams
+      game.teams.push(new mongoose.Types.ObjectId(user.id));
+      await game.save();
+
+      const teamsPopulated = await GameModel.findById(game._id)
+      .populate<{
+        teams: User[]
+      }>([
+        {
+          path: 'teams',
+          model: UserModel
+        }
+      ]);
+      if (!teamsPopulated) {
+        throw new NAE('Game not found');
+      }
+
+
       const response: CreateGameResponse  = {
         success: true,
         message: 'Game created',
@@ -88,10 +144,16 @@ class GameController {
           id: game._id.toString(),
           name: game.name,
           dateTime: game.dateTime,
-          location: game.location,
-          teams: game.teams.map(team => team.toString())
+          teams: teamsPopulated.teams.map(user => {
+            return {
+              coach: user.username,
+              players: user.team ? user.team.players : [],
+              name: user.team ? user.team.name : ''
+            }
+          })
         }
       }
+
       res.status(201).json(response);
     } catch (error) {
       next(error);
@@ -99,81 +161,7 @@ class GameController {
   }
 
 
-  // update a game
-  static async updateGame(req: Request, res: Response, next: NextFunction) {
-    try {
-      const user = req.user;
-      if (!user) {
-        throw new NAE('User not found');
-      }
-      if (user.role !== 'coach') {
-        throw new NAE('User is not a coach');
-      }
-      const gameId = req.params.id;
-      const { name, dateTime, location, teams } = req.body;
-      const game = await GameModel.findById(gameId);
-      if (!game) {
-        throw new NAE('Game not found');
-      }
-      if (game.teams.some(team => !teams.includes(team.toString()))) {
-        throw new NAE('Teams not found');
-      }
-      game.name = name;
-      game.dateTime = dateTime;
-      game.location = location;
-      game.teams = teams;
-      await game.save();
-      const response: UpdateGameResponse  = {
-        success: true,
-        message: 'Game updated',
-        game: {
-          id: game._id.toString(),
-          name: game.name,
-          dateTime: game.dateTime,
-          location: game.location,
-          teams: game.teams.map(team => team.toString())
-        }
-      }
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-
-  // delete a game
-  static async deleteGame(req: Request, res: Response, next: NextFunction) {
-    try {
-      const user = req.user;
-      if (!user) {
-        throw new NAE('User not found');
-      }
-      if (user.role !== 'coach') {
-        throw new NAE('User is not a coach');
-      }
-      const gameId = req.params.id;
-      const game = await GameModel.findById(gameId);
-      if (!game) {
-        throw new NAE('Game not found');
-      }
-      await GameModel.deleteOne({ _id: new mongoose.Types.ObjectId(gameId) });
-      const response: DeleteGameResponse  = {
-        success: true,
-        message: 'Game deleted',
-        game: {
-          id: game._id.toString(),
-          name: game.name,
-          dateTime: game.dateTime,
-          location: game.location,
-          teams: game.teams.map(team => team.toString())
-        }
-      }
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
+  
 
 
 }

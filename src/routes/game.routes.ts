@@ -10,8 +10,8 @@ router.route('/')
 
 router.route('/:id')
 .get(GameController.getGameById)
-.put(GameController.updateGame)
-.delete(GameController.deleteGame)
+// .put(GameController.updateGame)
+// .delete(GameController.deleteGame)
 
 
 

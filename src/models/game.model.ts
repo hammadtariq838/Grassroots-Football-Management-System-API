@@ -4,8 +4,7 @@ import { Game } from "../types";
 const gameSchema = new mongoose.Schema<Game>({
   name: { type: String, required: true },
   dateTime: { type: Date, required: true },
-  location: { type: String, required: true },
-  teams: [{ type: mongoose.Schema.Types.ObjectId }],
+  teams: [{ type: mongoose.Schema.Types.ObjectId , ref: 'User', required: true }],
 }, { timestamps: true });
 
 

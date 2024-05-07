@@ -15,11 +15,11 @@ export type User = {
 
 export type Game = {
   name: string;
-  creator: mongoose.Types.ObjectId;
   dateTime: Date;
-  location: string;
   teams: mongoose.Types.ObjectId[];
 };
+
+
 
 export type Message = {
   from: mongoose.Types.ObjectId;
