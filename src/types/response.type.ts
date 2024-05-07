@@ -85,6 +85,20 @@ export type GameResponse = BaseResponse & {
       players: string[],
       name: string,
     }[],
+    messages: {
+      from: {
+        id: string,
+        username: string,
+        name: string,
+      },
+      to: {
+        id: string,
+        username: string,
+        name: string,
+      },
+      message: string,
+      dateTime: Date,
+    }[]
   }
 }
 export type GetGameResponse = GameResponse;
@@ -101,5 +115,38 @@ export type GetAllGamesResponse = BaseResponse & {
       players: string[],
       name: string,
     }[],
+    messages: {
+      from: {
+        id: string,
+        username: string,
+        name: string,
+      },
+      to: {
+        id: string,
+        username: string,
+        name: string,
+      },
+      message: string,
+      dateTime: Date,
+    }[]
+  }[]
+}
+
+
+
+export type GetAllMessagesResponse = BaseResponse & {
+  rooms: {
+    id: string,
+    users: {
+      id: string,
+      username: string,
+      name: string,
+    }[],
+    messages: {
+      from: string,
+      to: string,
+      message: string,
+      dateTime: Date,
+    }[]
   }[]
 }

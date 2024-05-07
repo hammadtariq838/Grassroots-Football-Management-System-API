@@ -17,6 +17,7 @@ export type Game = {
   name: string;
   dateTime: Date;
   teams: mongoose.Types.ObjectId[];
+  messages: mongoose.Types.ObjectId[];
 };
 
 
@@ -26,9 +27,4 @@ export type Message = {
   to: mongoose.Types.ObjectId;
   message: string;
   dateTime: Date;
-};
-
-export type GameChannel = {
-  game: mongoose.Types.ObjectId;
-  messages: Message[];
 };

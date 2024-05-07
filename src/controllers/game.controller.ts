@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { GameModel, UserModel } from '../models';
+import { GameModel, MessageModel, UserModel } from '../models';
 import { NAE } from '../error';
 import mongoose from 'mongoose';
 import { CreateGameResponse, GetAllGamesResponse, GetGameResponse, User } from '../types';
@@ -11,11 +11,25 @@ class GameController {
     try {
       const games = await GameModel.find({})
       .populate<{
-        teams: User[]
+        teams: User[],
+        messages: {
+          from: User & { _id: mongoose.Types.ObjectId },
+          to: User & { _id: mongoose.Types.ObjectId },
+          message: string,
+          dateTime: Date
+        }[]
       }>([
         {
           path: 'teams',
           model: UserModel
+        },
+        {
+          path: 'messages',
+          model: MessageModel,
+          populate: {
+            path: 'from to',
+            model: UserModel
+          }
         }
       ]);
       const response: GetAllGamesResponse = {
@@ -30,6 +44,22 @@ class GameController {
               coach: user.username,
               players: user.team ? user.team.players : [],
               name: user.team ? user.team.name : ''
+            }
+          }),
+          messages: game.messages.map(message => {
+            return {
+              from: {
+                id: message.from._id.toString(),
+                username: message.from.username,
+                name: message.from.name
+              },
+              to: {
+                id: message.to._id.toString(),
+                username: message.to.username,
+                name: message.to.name
+              },
+              message: message.message,
+              dateTime: message.dateTime
             }
           })
         }))
@@ -51,11 +81,25 @@ class GameController {
       const gameId = req.params.id;
       const game = await GameModel.findById(gameId)
       .populate<{
-        teams: User[]
+        teams: User[],
+        messages: {
+          from: User & { _id: mongoose.Types.ObjectId },
+          to: User & { _id: mongoose.Types.ObjectId },
+          message: string,
+          dateTime: Date
+        }[]
       }>([
         {
           path: 'teams',
           model: UserModel
+        },
+        {
+          path: 'messages',
+          model: MessageModel,
+          populate: {
+            path: 'from to',
+            model: UserModel
+          }
         }
       ]);
       if (!game) {
@@ -73,6 +117,22 @@ class GameController {
               coach: user.username,
               players: user.team ? user.team.players : [],
               name: user.team ? user.team.name : ''
+            }
+          }),
+          messages: game.messages.map(message => {
+            return {
+              from: {
+                id: message.from._id.toString(),
+                username: message.from.username,
+                name: message.from.name
+              },
+              to: {
+                id: message.to._id.toString(),
+                username: message.to.username,
+                name: message.to.name
+              },
+              message: message.message,
+              dateTime: message.dateTime
             }
           })
         }
@@ -117,7 +177,8 @@ class GameController {
       const game = new GameModel({
         name,
         dateTime,
-        teams: teams.map(teamId => new mongoose.Types.ObjectId(teamId))
+        teams: teams.map(teamId => new mongoose.Types.ObjectId(teamId)),
+        messages: []
       });
       // push user to teams
       game.teams.push(new mongoose.Types.ObjectId(user.id));
@@ -150,7 +211,8 @@ class GameController {
               players: user.team ? user.team.players : [],
               name: user.team ? user.team.name : ''
             }
-          })
+          }),
+          messages: []
         }
       }
 

@@ -5,6 +5,7 @@ const gameSchema = new mongoose.Schema<Game>({
   name: { type: String, required: true },
   dateTime: { type: Date, required: true },
   teams: [{ type: mongoose.Schema.Types.ObjectId , ref: 'User', required: true }],
+  messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }]
 }, { timestamps: true });
 
 
